@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+    <p style="text-align:left;">
+        D&D Player Finder 0.1
+        <span style="float:right;">
+           Hi {{ user.username }}!   |   <a href="{% url 'logout' %}">Log Out</a>
+        </span>
+    </p>
+    <hr>
+
+    {% if GameRequestList %}
+        {% for GameRequest in GameRequestList %}
+            <li><a href="{% url 'core:details' GameRequest.id %}">{{ GameRequest.RequestName }}</a></li>
+        {% endfor %}
+    {% else %}
+    <p>You do not have any active game requests yet.</p>
+    {% endif %}
+    <li><a href="{% url 'core:new request' %}">Create new request.</a></li>
+
+{% else %}
+<p style="text-align:left;">
+    D&D Player Finder 0.1
+    <span style="float:right;">
+       <a href="{% url 'login' %}">Log in</a> or <a href="{% url 'signup' %}">sign up.</a>
+    </span>
+</p>
+<hr>
+You must be logged in to view or submit game requests.
+{% endif %}
+{% endblock %}
