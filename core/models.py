@@ -1,6 +1,3 @@
-# Create your models here.
-
-from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import Point
@@ -8,12 +5,8 @@ from django.contrib.gis.measure import Distance
 from django.conf import settings
 
 from django.db.models.signals import post_save
-from django.core.mail import send_mail
 from django.dispatch import receiver
-from core.functions import coordinates_from_api, fake_coordinates
-
-
-import random
+from core.functions import coordinates_from_api, fake_coordinates, send_email
 
 # Supported game systems. This must be a fixed set of choices to
 # avoid having to accommodate different abbreviations (ex: 5e vs.
@@ -46,8 +39,10 @@ class GameRequest(models.Model):
     def save(self, *args, **kwargs):
         update_fields = []
 
-        if self.pk is not None and self.gis_point is not ():
-            dms = GameRequest.objects.filter(gis_point__distance_lt=(self.gis_point, Distance(mi=self.travel_range))).filter(system=self.system).filter(can_dm=True)
+        if self.pk is not None and self.gis_point != ():
+            dms = GameRequest.objects.filter(
+                gis_point__distance_lt=(self.gis_point, Distance(mi=self.travel_range))).filter(
+                system=self.system).filter(can_dm=True)
             print(dms)
             for dm in dms:
                 print(self.request_name + ' adding ' + dm.request_name)
@@ -112,9 +107,11 @@ def on_save(sender, instance, created, update_fields, **kwargs):
     print("signal")
     uf = update_fields
     address_updated = False
-    #Can't check for 'created' and update_fields contents in one line.
-    #Throws an error on trying to iterate on None.
-    #So set an address_updated flag in multiple steps.
+    ############
+    # Can't check for 'created' and update_fields contents in one line.
+    # Throws an error on trying to iterate on None.
+    # So set an address_updated flag in multiple steps.
+    ############
     if created:
         address_updated = True
     if update_fields is None:
@@ -128,11 +125,11 @@ def on_save(sender, instance, created, update_fields, **kwargs):
             print("going to API")
             # return
             instance.gis_point = coordinates_from_api(instance.address,
-                                 instance.city,
-                                 instance.state,
-                                 instance.zip)
+                                                      instance.city,
+                                                      instance.state,
+                                                      instance.zip)
             instance.save()
-            return #To avoid double emails abort this post_save attempt after saving.
+            return  # To avoid double emails abort this post_save attempt after saving.
         elif settings.USE_FAKE_COORDINATES:
             print("fake")
             instance.gis_point = fake_coordinates()
@@ -148,41 +145,16 @@ def on_save(sender, instance, created, update_fields, **kwargs):
     # travel that far and it cuts the volume of requests to process.
     # Since no other fields are changing this will not spawn more post_saves.
     if instance.can_dm:
-        request_list = GameRequest.objects.filter(gis_point__distance_lt=(instance.gis_point, Distance(mi=500))).filter(system=instance.system)
+        request_list = GameRequest.objects.filter(
+            gis_point__distance_lt=(instance.gis_point, Distance(mi=500)),
+            system=instance.system
+        )
         for r in request_list:
             r.save()
 
     if instance.gis_point.coords != ():
         # Find all DMs that could host this player.
-        print('hosts')
-        # hosts = GameRequest.objects.filter(
-        #     gis_point__distance_lt=(
-        #         instance.gis_point, Distance(mi=instance.travel_range))
-        # ).filter(system=instance.system).filter(can_dm=True)
         for host in instance.available_dms.all():
             players = GameRequest.objects.filter(available_dms=host)
             if len(players) >= 4:
                 send_email(host, players)
-            #players = GameRequest.objects.filter() players with that host
-            #if >= 3 players plus host send email
-
-
-
-    # IF DM update everyone in a 500 mile radius
-    # Assemble group(s)
-    return 0
-
-
-def send_email(dm, player_group):
-    dm_email = dm.user_id.email
-    subject = "Players found for " + dm.request_name + "!"
-    message = "Some players are available for your game!\n"
-    for players in player_group:
-        message += (players.user_id.username + "     " + players.user_id.email + "\n")
-
-    send_mail(subject,
-              message,
-              'notifications@gamefinder.com',
-              [dm_email],
-              fail_silently=True)
-

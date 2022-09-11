@@ -1,14 +1,10 @@
 from django.shortcuts import render
-# from django.contrib.auth import user
 from django.http import HttpResponse, HttpResponseRedirect
 from .models import GameRequest
 from .forms import GameRequestForm
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.contrib.gis.geos import Point, GEOSGeometry
 
-
-# Create your views here.
 
 # Index page.
 # Provides a list of a user's active game requests (if logged in) or
@@ -22,6 +18,7 @@ def index(request):
         return render(request, 'home.html')
     return HttpResponse("Arrived at broken index page.")
 
+
 # Individual request details page.
 # Optional argument: database ID for an existing game request.
 # If one is provided the page is populated with the current
@@ -31,7 +28,7 @@ def details(request, GameRequestID=0):
     if GameRequestID:
         GameRequestInstance = get_object_or_404(GameRequest, pk=GameRequestID)
         form = GameRequestForm(instance=GameRequestInstance)
-       # if form.is_valid(): should be validated but this breaks even when it looks fine?
+        # TODO if form.is_valid(): should be validated but this breaks even when it looks fine?
         context = {'form': form, 'RequestID': GameRequestID}
         return render(request, 'details.html', context)
     else:
@@ -59,7 +56,6 @@ def submit(request, GameRequestID=0):
 
 
 def delete(request, GameRequestID=None):
-    #return HttpResponse(GameRequestID)
     r = get_object_or_404(GameRequest, pk=GameRequestID)
     r.delete()
     return HttpResponseRedirect(reverse('core:index'), request)
@@ -67,13 +63,3 @@ def delete(request, GameRequestID=None):
 
 def hello(request):
     return HttpResponse("Hello world!")
-
-
-def fake_coordinates():
-    # 935 East 8th St. +/- a mile or three.
-    location = Point(48.10649195214683, -123.42273912049563)
-    x_shift = random.uniform(-0.02, 0.02)
-    y_shift = random.uniform(-0.02, 0.02)
-    location.x += x_shift
-    location.y += y_shift
-    return location

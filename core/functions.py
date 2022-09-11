@@ -1,11 +1,9 @@
 from django.contrib.gis.geos import Point
 from functools import lru_cache
-#from core.models import GameRequest
 from geopy.geocoders import Nominatim
-from django.db.models.signals import post_save
 from django.core.mail import send_mail
-from django.dispatch import receiver
 import random
+
 
 # Get latitude/longitude coordinates for an address (for distance search).
 # Uses geopy library: https://geopy.readthedocs.io/en/stable/
@@ -40,20 +38,15 @@ def fake_coordinates():
     return location
 
 
-def assemble_group(new_request):
-    return 0
-    #assume DM will host
-    #fetch new request
-    #find all DMs within nr.travelrange
-    #for each DM
-        #find all requests within dm.travelrange
-            #for each request check if within potential_player.travelrange
+def send_email(dm, player_group):
+    dm_email = dm.user_id.email
+    subject = "Players found for " + dm.request_name + "!"
+    message = "Some players are available for your game!\n"
+    for players in player_group:
+        message += (players.user_id.username + "     " + players.user_id.email + "\n")
 
-
-
-    #check for updated fields or point = 0,0 or none
-    #if yes get coordinates
-    #assemble group
-    #if group found send email
-
-
+    send_mail(subject,
+              message,
+              'notifications@gamefinder.com',
+              [dm_email],
+              fail_silently=True)

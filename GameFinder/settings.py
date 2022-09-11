@@ -13,11 +13,8 @@ import os
 
 from pathlib import Path
 
-import django.core.mail.backends.console
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
@@ -29,7 +26,6 @@ SECRET_KEY = 'django-insecure-w!18=u%!1p4)09d+apv8=zz1s8i3fnox_&m0ub@$g7u=4#8l8@
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -75,21 +71,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'GameFinder.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-       'ENGINE': 'django.contrib.gis.db.backends.postgis',
-       'NAME': 'gamefinder',
-       'USER': 'gamefinderuser',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'gamefinder',
+        'USER': 'gamefinderuser',
         'PASSWORD': 'pwd',
-       'HOST': '127.0.0.1',
-       'PORT': '5432',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -109,7 +103,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
@@ -122,7 +115,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
