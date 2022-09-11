@@ -14,7 +14,7 @@
 
     {% if GameRequestList %}
         {% for GameRequest in GameRequestList %}
-            <li><a href="{% url 'core:details' GameRequest.id %}">{{ GameRequest.RequestName }}</a></li>
+            <li><a href="{% url 'core:details' GameRequest.id %}">{{ GameRequest.request_name }}</a></li> - location {{GameRequest.gis_point}}
         {% endfor %}
     {% else %}
     <p>You do not have any active game requests yet.</p>

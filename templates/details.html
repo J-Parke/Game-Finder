@@ -7,7 +7,17 @@
   <form action = "{% url 'core:submit' RequestID %}" method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <button type="submit">Sign Up</button>
+    <button type="submit">Submit</button>     <button onclick="DeleteButton()" type="button">Delete Request</button>
   </form>
+
+<script>
+function DeleteButton(){
+  if (confirm("Confirm deleting game request?") == true){
+    window.location = '{% url 'core:delete' RequestID %}'
+    }
+  }
+</script>
 {% endblock %}
+
+
 

@@ -9,8 +9,11 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
+import os
 
 from pathlib import Path
+
+import django.core.mail.backends.console
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -78,8 +81,6 @@ WSGI_APPLICATION = 'GameFinder.wsgi.application'
 
 DATABASES = {
     'default': {
-        #'postgis://gamefinderuser:pwd@127.0.0.1:5342/gamefinder'
-        #'ENGINE': 'django.db.backends.postgresql',
        'ENGINE': 'django.contrib.gis.db.backends.postgis',
        'NAME': 'gamefinder',
        'USER': 'gamefinderuser',
@@ -135,3 +136,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
+
+USE_GEOPY_API = os.getenv('USE_GEOPY_API', False) == 'True'
+USE_FAKE_COORDINATES = False
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
