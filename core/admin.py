@@ -1,5 +1,4 @@
 from django.contrib import admin
-from .models import GameRequest, Test
+from .models import GameRequest
 
 admin.site.register(GameRequest)
-admin.site.register(Test)

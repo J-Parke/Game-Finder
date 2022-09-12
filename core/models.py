@@ -8,11 +8,12 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from core.functions import coordinates_from_api, fake_coordinates, send_email
 
-# Supported game systems. This must be a fixed set of choices to
-# avoid having to accommodate different abbreviations (ex: 5e vs.
-# 5th Edition).
+##############
+# Supported game systems for system field. This must be a fixed set of choices to
+# avoid having to accommodate different abbreviations (ex: 5e vs. 5th Edition).
 # If the project scales to include a non-developer admin this should
 # be converted to a model so it can be managed via the admin panel.
+##############
 SYSTEMCHOICES = [('3.5e', 'D&D 3.5e'),
                  ('PF', 'Pathfinder'),
                  ('4e', 'D&D 4e'),
@@ -21,6 +22,23 @@ SYSTEMCHOICES = [('3.5e', 'D&D 3.5e'),
 
 
 class GameRequest(models.Model):
+    """
+    Core game request model.
+    User_id: associated User that made the request.
+    Request_name: display name for this request on the front end.
+    System: game system the user wishes to play.
+    Can_dm: if the user can DM/host. For simplicity it is assumed that DMs can always host
+        at their location.
+    Available_dms: list of potential DMs/hosts within the user's travel range. Stored in the model
+        to reduce database reads when assembling a group.
+    Travel_range: range in miles the user is willing to travel to a game.
+    Address, city, state, zip: string format address submitted by user.
+    Gis_point: geographical coordinates of the address used in the search algorithm. Note that
+        Python's Point object is (longitude, latitude) contrary to the normal map format.
+
+    Contains a custom save() and is linked to a post_save signal for converting the address and
+    finding potential game groups.
+    """
     class Meta:
         unique_together = ['user_id', 'system']
 
@@ -37,106 +55,93 @@ class GameRequest(models.Model):
     gis_point = models.PointField(blank=True, null=True, srid=4326, default=Point([]))
 
     def save(self, *args, **kwargs):
+        """
+        Custom save function.
+        Finds all eligible DMs/hosts within the user's travel range and creates the many-to-many
+        relation.
+        Also sets update_fields for the post_save signal to recognize if changes to the address
+        fields have been made.
+        """
         update_fields = []
-
+        # Gis_point is () if address conversion is disabled or if the API conversion fails..
+        # It's fine to skip on pk = None since the address will be updated and post_save will
+        # call another save() to get right back here and fill this in.
         if self.pk is not None and self.gis_point != ():
             dms = GameRequest.objects.filter(
                 gis_point__distance_lt=(self.gis_point, Distance(mi=self.travel_range))).filter(
                 system=self.system).filter(can_dm=True)
-            print(dms)
             for dm in dms:
-                print(self.request_name + ' adding ' + dm.request_name)
+                # TODO need to clear DMs that are no longer valid but set() causes errors.
                 self.available_dms.add(dm)
 
-        if self.pk is None:
-            update_fields = ['user_id',
-                             'request_name',
-                             'system',
-                             'can_dm',
-                             'travel_range',
-                             'address',
-                             'city',
-                             'state',
-                             'zip',
-                             'gis_point']
+        if self.pk is None:  # Update_fields is only valid if the database transaction is an update.
             super(GameRequest, self).save(*args, **kwargs)
         else:
             original = GameRequest.objects.get(pk=self.pk)
-            if original.request_name != self.request_name:
-                update_fields.append('request_name')
-            if original.system != self.system:
-                update_fields.append('system')
-            if original.can_dm != self.can_dm:
-                update_fields.append('can_dm')
-            if original.travel_range != self.travel_range:
-                update_fields.append('travel_range')
-            if original.address != self.address:
-                update_fields.append('address')
-            if original.city != self.city:
-                update_fields.append('city')
-            if original.state != self.state:
-                update_fields.append('state')
-            if original.zip != self.zip:
-                update_fields.append('zip')
-            if original.gis_point != self.gis_point:
-                update_fields.append('gis_point')
+            for field in [
+                'request_name',
+                'system',
+                'can_dm',
+                'travel_range',
+                'address',
+                'city',
+                'state',
+                'zip',
+                'gis_point'
+            ]:
+                if getattr(original, field) != getattr(self, field):
+                    update_fields.append(field)
             super(GameRequest, self).save(update_fields=update_fields, *args, **kwargs)
 
     def __str__(self):
         return self.request_name
 
 
-# Test class for debug purposes only. Not used otherwise.
-class Test(models.Model):
-    Data = models.CharField(max_length=200)
-
-
-# Receiver for save() on the GameRequest model.
-# To avoid exceeding API rate limits or causing long page load
-# times while waiting for a rate limiter to clear some data processing
-# is handled as a post-save signal while the user is sent the next page.
-# Does three things:
-# * Check if the location coordinates need to be updated and, if so,
-#   get them from the map API.
-# * Check if the newly submitted request creates any valid groups
-#   of players.
-# * Send an email notification for any DM that has a player group
-#   involving the new request.
 @receiver(post_save, sender=GameRequest)
 def on_save(sender, instance, created, update_fields, **kwargs):
-    print("signal")
-    uf = update_fields
+    """
+    # Receiver for save() on the GameRequest model.
+    To avoid causing long page load times (such as if an API rate limiter is required)
+    some data processing is handled as a post-save signal while the user is sent the next page.
+    Does three things:
+    * Check if the location coordinates need to be updated and, if so,
+        get them from the map API.
+    * Check if the newly submitted request creates any valid groups
+        of players.
+    * Send an email notification for any DM that has a player group
+        involving the new request.
+    """
     address_updated = False
-    ############
-    # Can't check for 'created' and update_fields contents in one line.
-    # Throws an error on trying to iterate on None.
-    # So set an address_updated flag in multiple steps.
-    ############
+
+    # In some cases (new models or saves with no changes) update_fields will be None.
+    # To avoid None errors we need to explicitly pass when update_fields is None and not
+    # attempt to evaluate the if expression.
+
     if created:
         address_updated = True
     if update_fields is None:
         pass
-    elif 'address' in uf or 'city' in uf or 'state' in uf or 'zip' in uf:
+    elif any([field in update_fields for field in ['address', 'city', 'state', 'zip']]):
         address_updated = True
 
+    # Either a new model or an update to an existing address calls the address to point conversion.
     if address_updated:
-        print(address_updated)
         if settings.USE_GEOPY_API:
-            print("going to API")
-            # return
-            instance.gis_point = coordinates_from_api(instance.address,
-                                                      instance.city,
-                                                      instance.state,
-                                                      instance.zip)
+            instance.gis_point = coordinates_from_api(
+                instance.address,
+                instance.city,
+                instance.state,
+                instance.zip
+            )
             instance.save()
             return  # To avoid double emails abort this post_save attempt after saving.
+        # To test without calling the API use fake coordinates.
         elif settings.USE_FAKE_COORDINATES:
-            print("fake")
             instance.gis_point = fake_coordinates()
             instance.save()
             return
-        # Else leave blank coordinates intact. One of these options
-        # should probably be enabled though.
+        # Else leave blank coordinates intact. One of these options should probably be enabled
+        # though, otherwise coordinates will always be () and the search won't work.
 
     # If this person can DM call the save function for
     # every request within a 500 mile radius to update their DM list.
@@ -150,11 +155,13 @@ def on_save(sender, instance, created, update_fields, **kwargs):
             system=instance.system
         )
         for r in request_list:
+            # TODO potential scaling issue, can this be done with fewer database transactions?
             r.save()
 
     if instance.gis_point.coords != ():
         # Find all DMs that could host this player.
         for host in instance.available_dms.all():
+            # Find all players that list this DM as a possible host.
             players = GameRequest.objects.filter(available_dms=host)
-            if len(players) >= 4:
+            if len(players) >= 4:  # DM and 3+ players is a typical game group.
                 send_email(host, players)

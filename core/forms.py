@@ -6,18 +6,35 @@ from django.contrib.auth.models import User
 
 
 class GameRequestForm(ModelForm):
+    """
+    Model form for viewing, submitting, or editing game requests.
+    Hides latitude/longitude point and list of compatible DMs on the GameRequest model
+    as these are not user-editable.
+    """
     class Meta:
         model = GameRequest
-        fields = ['request_name', 'system', 'can_dm',
-                  'travel_range', 'address', 'city',
-                  'state', 'zip']
-        labels = {'request_name': 'Request name',
-                  'can_dm': 'Can DM?',
-                  'travel_range': 'Travel range (miles)'
-                  }
+        fields = [
+            'request_name',
+            'system',
+            'can_dm',
+            'travel_range',
+            'address',
+            'city',
+            'state',
+            'zip'
+        ]
+        labels = {
+            'request_name': 'Request name',
+            'can_dm': 'Can DM?',
+            'travel_range': 'Travel range (miles)'
+        }
 
 
 class MyUserCreationForm(UserCreationForm):
+    """
+    Custom user registration form to add email address field on the signup page.
+    One additional field on the form and a custom save().
+    """
     email = forms.EmailField(required=True)
 
     class Meta:

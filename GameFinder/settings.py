@@ -130,6 +130,6 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 USE_GEOPY_API = os.getenv('USE_GEOPY_API', False) == 'True'
-USE_FAKE_COORDINATES = False
+USE_FAKE_COORDINATES = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

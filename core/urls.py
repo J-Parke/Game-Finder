@@ -13,6 +13,4 @@ urlpatterns = [
     path('submit/<int:GameRequestID>', views.submit, name='submit'),
     # Delete the request a form is attached to.
     path('delete/<int:GameRequestID>', views.delete, name='delete'),
-    # Server debug only.
-    path('hello/', views.hello, name='hello')
 ]

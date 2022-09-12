@@ -13,13 +13,15 @@
     <hr>
 
     {% if GameRequestList %}
+    <ul>
         {% for GameRequest in GameRequestList %}
-            <li><a href="{% url 'core:details' GameRequest.id %}">{{ GameRequest.request_name }}</a></li> - location {{GameRequest.gis_point}}
+            <li><a href="{% url 'core:details' GameRequest.id %}">{{ GameRequest.request_name }}</a></li>
         {% endfor %}
+    </ul>
     {% else %}
     <p>You do not have any active game requests yet.</p>
     {% endif %}
-    <li><a href="{% url 'core:new request' %}">Create new request.</a></li>
+    <a href="{% url 'core:new request' %}">Create new request.</a>
 
 {% else %}
 <p style="text-align:left;">
