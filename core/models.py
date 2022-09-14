@@ -24,16 +24,16 @@ SYSTEMCHOICES = [('3.5e', 'D&D 3.5e'),
 class GameRequest(models.Model):
     """
     Core game request model.
-    User_id: associated User that made the request.
-    Request_name: display name for this request on the front end.
-    System: game system the user wishes to play.
-    Can_dm: if the user can DM/host. For simplicity it is assumed that DMs can always host
+    user_id: associated User that made the request.
+    request_name: display name for this request on the front end.
+    system: game system the user wishes to play.
+    can_dm: if the user can DM/host. For simplicity it is assumed that DMs can always host
         at their location.
-    Available_dms: list of potential DMs/hosts within the user's travel range. Stored in the model
+    available_dms: list of potential DMs/hosts within the user's travel range. Stored in the model
         to reduce database reads when assembling a group.
-    Travel_range: range in miles the user is willing to travel to a game.
-    Address, city, state, zip: string format address submitted by user.
-    Gis_point: geographical coordinates of the address used in the search algorithm. Note that
+    travel_range: range in miles the user is willing to travel to a game.
+    address, city, state, zip: string format address submitted by user.
+    gis_point: geographical coordinates of the address used in the search algorithm. Note that
         Python's Point object is (longitude, latitude) contrary to the normal map format.
 
     Contains a custom save() and is linked to a post_save signal for converting the address and
