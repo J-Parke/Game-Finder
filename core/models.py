@@ -24,7 +24,7 @@ SYSTEMCHOICES = [('3.5e', 'D&D 3.5e'),
 class GameRequest(models.Model):
     """
     Core game request model.
-    user_id: associated User that made the request.
+    user: associated User that made the request.
     request_name: display name for this request on the front end.
     system: game system the user wishes to play.
     can_dm: if the user can DM/host. For simplicity it is assumed that DMs can always host
