@@ -40,9 +40,9 @@ class GameRequest(models.Model):
     finding potential game groups.
     """
     class Meta:
-        unique_together = ['user_id', 'system']
+        unique_together = ['user', 'system']
 
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     request_name = models.CharField(max_length=200)
     system = models.CharField(max_length=200, choices=SYSTEMCHOICES)
     can_dm = models.BooleanField(default=False)

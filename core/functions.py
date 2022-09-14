@@ -47,11 +47,11 @@ def send_email(dm, player_group):
     Note: uses a placeholder outgoing email address since email is configured
     to print to console.
     """
-    dm_email = dm.user_id.email
+    dm_email = dm.user.email
     subject = f"Players found for {dm.request_name}!"
     message = "Some players are available for your game!\n"
     for players in player_group:
-        message += f"{players.user_id.username}      {players.user_id.email}\n"
+        message += f"{players.user.username}      {players.user.email}\n"
 
     send_mail(subject,
               message,
