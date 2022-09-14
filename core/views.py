@@ -59,7 +59,7 @@ def submit(request, GameRequestID=0):
         return HttpResponseRedirect(reverse('core:index'), request)
     else:
         f = GameRequestForm(request.POST)
-        f.instance.user_id = request.user
+        f.instance.user = request.user
         f.save()
         return HttpResponseRedirect(reverse('core:index'), request)
 
